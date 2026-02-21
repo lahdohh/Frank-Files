@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Frank Files — Countdown</title>
+  <style>
+    :root{
+      --bg1:#03040a;
+      --bg2:#070814;
+      --ink:#e8ecff;
+      --muted: rgba(232,236,255,.72);
+      --panel: rgba(255,255,255,.06);
+      --panel2: rgba(0,0,0,.35);
+      --border: rgba(255,255,255,.14);
+      --accent: rgba(255,70,70,.85);
+      --good: rgba(34,197,94,.35);
+      --shadow: rgba(0,0,0,.55);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    body{
+      margin:0;
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      background:
+        radial-gradient(1200px 600px at 70% 0%, rgba(140,70,255,.10), transparent 55%),
+        radial-gradient(900px 500px at 10% 10%, rgba(255,70,70,.08), transparent 60%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      color:var(--ink);
+      overflow:hidden;
+    }
+
+    /* subtle vignette */
+    body::before{
+      content:"";
+      position:fixed; inset:-40px;
+      background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,.75) 78%);
+      pointer-events:none;
+      mix-blend-mode:multiply;
+    }
+
+    /* scanlines + noise */
+    .fx{
+      position:fixed; inset:0;
+      pointer-events:none;
+    }
+    .scanlines{
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,.035) 0px,
+        rgba(255,255,255,.035) 1px,
+        rgba(0,0,0,0) 3px,
+        rgba(0,0,0,0) 6px
+      );
+      opacity:.18;
+      mix-blend-mode: overlay;
+      animation: flicker 6s infinite;
+    }
+    .noise{
+      background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='.25'/%3E%3C/svg%3E");
+      opacity:.08;
+      mix-blend-mode: overlay;
+      animation: drift 12s linear infinite;
+    }
+
+    @keyframes drift{
+      from{ transform: translate3d(0,0,0); }
+      to{ transform: translate3d(-40px, 30px, 0); }
+    }
+    @keyframes flicker{
+      0%, 100%{ opacity:.14; }
+      50%{ opacity:.22; }
+      52%{ opacity:.10; }
+      54%{ opacity:.20; }
+      56%{ opacity:.16; }
+    }
+
+    /* fog */
+    .fog{
+      position:fixed;
+      inset:-20%;
+      background:
+        radial-gradient(circle at 30% 40%, rgba(255,255,255,.10), transparent 55%),
+        radial-gradient(circle at 70% 60%, rgba(255,255,255,.08), transparent 60%),
+        radial-gradient(circle at 50% 50%, rgba(255,255,255,.06), transparent 60%);
+      filter: blur(30px);
+      opacity:.10;
+      animation: fogMove 18s ease-in-out infinite alternate;
+      pointer-events:none;
+    }
+    @keyframes fogMove{
+      from{ transform: translate3d(-3%, -2%, 0) scale(1.02); }
+      to{ transform: translate3d(3%, 2%, 0) scale(1.05); }
+    }
+
+    .wrap{
+      width:min(820px, 92vw);
+      padding: 28px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border: 1px solid var(--border);
+      box-shadow: 0 18px 55px var(--shadow);
+      backdrop-filter: blur(10px);
+      position:relative;
+      overflow:hidden;
+    }
+
+    /* subtle inner grit */
+    .wrap::after{
+      content:"";
+      position:absolute; inset:0;
+      background: radial-gradient(800px 200px at 50% 0%, rgba(255,70,70,.08), transparent 55%);
+      opacity:.7;
+      pointer-events:none;
+    }
+
+    .topline{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      position:relative;
+      z-index:1;
+    }
+
+    .tag{
+      font-size:12px;
+      letter-spacing:2.2px;
+      text-transform:uppercase;
+      color: rgba(255,255,255,.75);
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(0,0,0,.30);
+      border: 1px solid rgba(255,255,255,.12);
+    }
+
+    .glitch{
+      position:relative;
+      font-size: clamp(28px, 4.6vw, 52px);
+      margin: 10px 0 8px;
+      letter-spacing: .5px;
+      text-shadow: 0 0 18px rgba(255,70,70,.18);
+      z-index:1;
+    }
+    .glitch::before, .glitch::after{
+      content: attr(data-text);
+      position:absolute;
+      left:0; top:0;
+      width:100%;
+      overflow:hidden;
+      clip-path: inset(0 0 0 0);
+      opacity:.7;
+      pointer-events:none;
+    }
+    .glitch::before{
+      transform: translate(1px, 0);
+      color: rgba(255,70,70,.75);
+      animation: glitchA 2.8s infinite;
+      mix-blend-mode: screen;
+    }
+    .glitch::after{
+      transform: translate(-1px, 0);
+      color: rgba(120,160,255,.65);
+      animation: glitchB 3.4s infinite;
+      mix-blend-mode: screen;
+    }
+    @keyframes glitchA{
+      0%,100%{ clip-path: inset(0 0 92% 0); }
+      10%{ clip-path: inset(15% 0 55% 0); }
+      20%{ clip-path: inset(50% 0 35% 0); }
+      30%{ clip-path: inset(10% 0 78% 0); }
+      40%{ clip-path: inset(65% 0 15% 0); }
+      50%{ clip-path: inset(35% 0 40% 0); }
+      60%{ clip-path: inset(80% 0 5% 0); }
+      70%{ clip-path: inset(18% 0 60% 0); }
+      80%{ clip-path: inset(55% 0 28% 0); }
+      90%{ clip-path: inset(8% 0 82% 0); }
+    }
+    @keyframes glitchB{
+      0%,100%{ clip-path: inset(88% 0 0 0); }
+      12%{ clip-path: inset(25% 0 52% 0); }
+      24%{ clip-path: inset(58% 0 25% 0); }
+      36%{ clip-path: inset(12% 0 75% 0); }
+      48%{ clip-path: inset(72% 0 10% 0); }
+      60%{ clip-path: inset(40% 0 38% 0); }
+      72%{ clip-path: inset(84% 0 6% 0); }
+      84%{ clip-path: inset(20% 0 55% 0); }
+      96%{ clip-path: inset(62% 0 22% 0); }
+    }
+
+    .desc{
+      margin:0 0 18px;
+      color: var(--muted);
+      line-height:1.55;
+      max-width: 70ch;
+      position:relative;
+      z-index:1;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 10px;
+      position:relative;
+      z-index:1;
+    }
+    @media (max-width: 560px){
+      .grid{ grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .box{
+      padding: 14px 12px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(0,0,0,.40), rgba(0,0,0,.22));
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+      text-align:center;
+    }
+    .num{
+      font-weight: 900;
+      font-size: clamp(24px, 5.2vw, 46px);
+      letter-spacing: .6px;
+    }
+    .label{
+      margin-top: 2px;
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      opacity: .78;
+    }
+
+    .meta{
+      margin-top: 16px;
+      font-size: 13px;
+      opacity: .82;
+      display:flex;
+      justify-content:space-between;
+      gap: 10px;
+      flex-wrap:wrap;
+      position:relative;
+      z-index:1;
+    }
+
+    .done{
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(34,197,94,.10);
+      border: 1px solid var(--good);
+      display:none;
+      position:relative;
+      z-index:1;
+    }
+
+    .red{
+      color: rgba(255,70,70,.95);
+      text-shadow: 0 0 16px rgba(255,70,70,.22);
+    }
+  </style>
+</head>
+<body>
+  <div class="fx scanlines"></div>
+  <div class="fx noise"></div>
+  <div class="fog"></div>
+
+  <main class="wrap">
+    <div class="topline">
+      <div class="tag">ARCHIVE // STAYFOCUSEDFRANK</div>
+      <div class="tag">CASE FILE: <span class="red" id="caseId">FF-060326</span></div>
+    </div>
+
+    <h1 class="glitch" data-text="THE FRANK FILES">THE FRANK FILES</h1>
+    <p class="desc" id="subtext">
+      A countdown to the next release. Keep your eyes open. Keep your focus.
+    </p>
+
+    <section class="grid" aria-label="Countdown timer">
+      <div class="box"><div class="num" id="days">--</div><div class="label">Days</div></div>
+      <div class="box"><div class="num" id="hours">--</div><div class="label">Hours</div></div>
+      <div class="box"><div class="num" id="minutes">--</div><div class="label">Minutes</div></div>
+      <div class="box"><div class="num" id="seconds">--</div><div class="label">Seconds</div></div>
+    </section>
+
+    <div class="done" id="doneBox">⚠️ FILE STATUS: OPEN</div>
+
+    <div class="meta">
+      <div>Target (NY): <span id="targetPretty"></span></div>
+      <div>System time: <span id="nowPretty"></span></div>
+    </div>
+  </main>
+
+  <script>
+    // ---- EDITABLE TEXT ----
+    // Change this to whatever you want on the page:
+    document.getElementById("subtext").textContent =
+      "yo ass is getting leaked, you can't run from your past anymore you freak.";
+
+    // ---- Target time: March 6, 2026 8:00 PM America/New_York ----
+    const targetUtcMs = (function getTargetUtcMsForNY() {
+      const tz = "America/New_York";
+      const y = 2026, mo = 3, d = 6, h = 20, mi = 0, s = 0;
+
+      const utcGuess = Date.UTC(y, mo - 1, d, h, mi, s);
+
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: tz,
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit",
+        hour12: false
+      }).formatToParts(new Date(utcGuess));
+
+      const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
+      const nyAsIfUtc = Date.UTC(+map.year, +map.month - 1, +map.day, +map.hour, +map.minute, +map.second);
+
+      const nyOffsetMs = nyAsIfUtc - utcGuess;
+      const desiredLocalAsIfUtc = Date.UTC(y, mo - 1, d, h, mi, s);
+      return desiredLocalAsIfUtc - nyOffsetMs;
+    })();
+
+    const els = {
+      days: document.getElementById("days"),
+      hours: document.getElementById("hours"),
+      minutes: document.getElementById("minutes"),
+      seconds: document.getElementById("seconds"),
+      doneBox: document.getElementById("doneBox"),
+      targetPretty: document.getElementById("targetPretty"),
+      nowPretty: document.getElementById("nowPretty"),
+    };
+
+    const targetPrettyFmt = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York",
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZoneName: "short"
+    });
+
+    els.targetPretty.textContent = targetPrettyFmt.format(new Date(targetUtcMs));
+
+    function pad2(n){ return String(n).padStart(2,"0"); }
+
+    function tick(){
+      const now = Date.now();
+      const diff = targetUtcMs - now;
+
+      els.nowPretty.textContent = new Date(now).toLocaleString();
+
+      if(diff <= 0){
+        els.days.textContent = "0";
+        els.hours.textContent = "00";
+        els.minutes.textContent = "00";
+        els.seconds.textContent = "00";
+        els.doneBox.style.display = "block";
+        return;
+      } else {
+        els.doneBox.style.display = "none";
+      }
+
+      const totalSeconds = Math.floor(diff / 1000);
+      const days = Math.floor(totalSeconds / 86400);
+      const hours = Math.floor((totalSeconds % 86400) / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+
+      els.days.textContent = String(days);
+      els.hours.textContent = pad2(hours);
+      els.minutes.textContent = pad2(minutes);
+      els.seconds.textContent = pad2(seconds);
+    }
+
+    tick();
+    setInterval(tick, 1000);
+  </script>
+</body>
+</html>
